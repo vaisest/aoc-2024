@@ -9,5 +9,23 @@ fn read_input(day: &str) -> String {
 }
 
 fn main() {
-    solvers::day01::part1(read_input("01"));
+    println!(
+        "Day 1 part 1: {}",
+        solvers::day01::part1(read_input("01p1"))
+    );
+
+    println!(
+        "Day 1 part 2: {}",
+        solvers::day01::part2(read_input("01p1"))
+    );
+
+    println!(
+        "Day 2 part 1: {}",
+        solvers::day02::part1(read_input("02p1"))
+    );
+
+    println!(
+        "Day 2 part 2: {}",
+        solvers::day02::part2(read_input("02p1"))
+    );
 }

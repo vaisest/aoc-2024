@@ -1,0 +1,23 @@
+pub fn part1(input: String) -> String {
+    String::new();
+}
+
+pub fn part2(input: String) -> String {
+    String::new();
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sample_p1() {
+        let input = "".to_string();
+        assert_eq!(part1(input), "11");
+    }
+
+    #[test]
+    fn sample_p2() {
+        let input = "".to_string();
+        assert_eq!(part2(input), "31");
+    }
+}
