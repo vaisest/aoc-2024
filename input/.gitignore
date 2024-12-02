@@ -1,0 +1,8 @@
+# There's a very weird rule about redistributing *the automatically generated* input
+# as the AoC creators consider it to be copyrighted.
+
+# The legal details seem dubious, but let's comply anyway:
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore

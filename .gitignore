@@ -22,4 +22,9 @@ Cargo.lock
 
 # Added by cargo
 
+api_key.txt
+
 /target
+
+# python garbage
+.mypy_cache
