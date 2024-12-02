@@ -6,6 +6,7 @@ pub fn part2(input: String) -> String {
     String::new();
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -70,6 +70,7 @@ pub fn part2(input: String) -> String {
         .to_string()
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
