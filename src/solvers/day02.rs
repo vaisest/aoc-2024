@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 fn verify_sequence_iter(mut sequence: impl Iterator<Item = i32>) -> bool {
     let mut increasing: Option<bool> = None;
     let mut last = sequence.next().unwrap();
@@ -27,7 +29,7 @@ pub fn part1(input: String) -> String {
             let iterator = line
                 .split_whitespace()
                 .map(|it| it.parse::<i32>().unwrap())
-                .collect::<Vec<i32>>()
+                .collect::<ArrayVec<i32, 8>>()
                 .into_iter();
 
             if verify_sequence_iter(iterator) {
@@ -49,7 +51,7 @@ pub fn part2(input: String) -> String {
             let vec = line
                 .split_whitespace()
                 .map(|it| it.parse::<i32>().unwrap())
-                .collect::<Vec<i32>>();
+                .collect::<ArrayVec<i32, 8>>();
 
             for i in 0..vec.len() {
                 // drop ith number and verify that slice.

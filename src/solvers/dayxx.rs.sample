@@ -1,9 +1,9 @@
 pub fn part1(input: String) -> String {
-    String::new()
+    input
 }
 
 pub fn part2(input: String) -> String {
-    String::new()
+    input
 }
 
 #[cfg(test)]
