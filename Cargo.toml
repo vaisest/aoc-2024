@@ -7,3 +7,7 @@ edition = "2021"
 arrayvec = "0.7.6"
 bitvec = "1.0.1"
 regex = "1.11.1"
+
+[profile.profiling]
+inherits = "release"
+debug = true
