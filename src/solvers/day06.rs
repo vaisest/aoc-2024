@@ -1,5 +1,8 @@
 use std::collections::BTreeSet;
 
+use arrayvec::ArrayVec;
+use bitvec::prelude::*;
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 enum Direction {
     UP,
@@ -7,15 +10,25 @@ enum Direction {
     LEFT,
     RIGHT,
 }
-
-fn next_dir(dir: &Direction) -> Direction {
-    match dir {
-        Direction::UP => Direction::RIGHT,
-        Direction::RIGHT => Direction::DOWN,
-        Direction::DOWN => Direction::LEFT,
-        Direction::LEFT => Direction::UP,
+impl Direction {
+    fn next_dir(&self) -> Self {
+        match self {
+            Direction::UP => Direction::RIGHT,
+            Direction::RIGHT => Direction::DOWN,
+            Direction::DOWN => Direction::LEFT,
+            Direction::LEFT => Direction::UP,
+        }
     }
 }
+
+// fn next_dir(dir: &Direction) -> Direction {
+//     match dir {
+//         Direction::UP => Direction::RIGHT,
+//         Direction::RIGHT => Direction::DOWN,
+//         Direction::DOWN => Direction::LEFT,
+//         Direction::LEFT => Direction::UP,
+//     }
+// }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 struct Coord {
@@ -61,29 +74,48 @@ impl Coord {
             },
         }
     }
-    fn get_from<'a, T: Copy>(&self, matrix: &'a Vec<Vec<T>>) -> Option<&'a T> {
+    fn get_from<'a>(&self, matrix: &'a Matrix) -> Option<&'a Cell> {
         matrix.get(self.y).and_then(|it| it.get(self.x))
     }
-    // fn access_next_by_dir<'a, T: Copy>(
-    //     &self,
-    //     arr: &'a Vec<Vec<T>>,
-    //     dir: &Direction,
-    // ) -> Option<&'a T> {
-    //     let pos = self.next_pos_towards(dir);
-    //     arr.get(pos.y).and_then(|it| it.get(pos.x))
-    // }
-    // fn access_next_after_turn<'a, T: Copy>(
-    //     &self,
-    //     arr: &'a Vec<Vec<T>>,
-    //     dir: &Direction,
-    // ) -> Option<&'a T> {
-    //     let new_dir = next_dir(dir);
-    //     let pos = self.next_pos_by_dir(&new_dir);
-    //     arr.get(pos.y).and_then(|it| it.get(pos.x))
-    // }
 }
 
-fn walk(mut pos: Coord, matrix: &Vec<Vec<char>>) -> BTreeSet<Coord> {
+fn input_into_matrix(input: String) -> (Coord, Matrix) {
+    // returns input as a matrix using arrayvec(n=130), converted into Cell enum
+    // and also reports the guard spawn point
+    let mut pos = Coord::new(0, 0);
+
+    let matrix = input
+        .lines()
+        .enumerate()
+        .map(|(y, it)| {
+            it.chars()
+                .enumerate()
+                .map(|(x, it)| {
+                    match it {
+                        '#' => Cell::Blocker,
+                        '.' => Cell::Empty,
+                        '^' => {
+                            // we save the guard's starting position
+                            pos.set(y, x);
+                            Cell::Start
+                        }
+                        _ => unreachable!("unrecognised character in day 6 input"),
+                    }
+                })
+                .collect()
+        })
+        // input is max 130x130. if using custom input, change to Vec
+        .collect::<Matrix>();
+
+    // assert that we have a square
+    assert!(matrix.iter().all(|it| it.len() == matrix.len()));
+
+    (pos, matrix)
+}
+
+fn walk(spawn_pos: &Coord, matrix: &Matrix) -> BTreeSet<Coord> {
+    // finds guard's route by moving forward until we're in front of a wall and have to turn right
+    let mut pos = spawn_pos.clone();
     let mut visited = BTreeSet::new();
     let mut dir = Direction::UP;
     while pos.in_bounds(matrix.len()) {
@@ -91,9 +123,9 @@ fn walk(mut pos: Coord, matrix: &Vec<Vec<char>>) -> BTreeSet<Coord> {
         if pos
             .next_pos_towards(&dir)
             .get_from(&matrix)
-            .is_some_and(|&it| it == '#')
+            .is_some_and(|&it| it == Cell::Blocker)
         {
-            dir = next_dir(&dir);
+            dir = dir.next_dir();
         }
         pos.apply_dir(&dir);
     }
@@ -101,37 +133,31 @@ fn walk(mut pos: Coord, matrix: &Vec<Vec<char>>) -> BTreeSet<Coord> {
 }
 
 pub fn part1(input: String) -> String {
-    let matrix = input
-        .lines()
-        // could be arrayvec, lines are small and random access
-        .map(|it| it.chars().collect::<Vec<char>>())
-        .collect::<Vec<Vec<char>>>();
+    let (pos, matrix) = input_into_matrix(input);
 
-    // assert square
-    assert!(matrix.iter().all(|it| it.len() == matrix.len()));
-
-    let mut pos = Coord::new(0, 0);
-    // find the guard's starting position
-    'outer: for y in 0..matrix.len() {
-        for x in 0..matrix.len() {
-            if matrix[y][x] == '^' {
-                pos.set(y, x);
-                break 'outer;
-            }
-        }
-    }
-
-    walk(pos, &matrix).len().to_string()
+    walk(&pos, &matrix).len().to_string()
 }
 
-fn test_for_cycle(spawn_pos: &Coord, matrix: &Vec<Vec<char>>) -> bool {
+fn idx_for_dir(dir: &Direction) -> usize {
+    match dir {
+        Direction::UP => 0,
+        Direction::RIGHT => 1,
+        Direction::DOWN => 2,
+        Direction::LEFT => 3,
+    }
+}
+
+fn test_for_cycle(spawn_pos: &Coord, matrix: &Matrix) -> bool {
     let mut pos = spawn_pos.clone();
     let mut dir = Direction::UP;
-    let mut visited = BTreeSet::new();
+    // use bitvec instead of a set. hard to read, but seems to be a 25-30x speed increase
+    let mut visited = bitvec![0; matrix.len() * matrix.len() * 4];
 
     while pos.in_bounds(matrix.len()) {
-        visited.insert((dir, pos));
-
+        visited.set(
+            pos.y * matrix.len() * 4 + pos.x * 4 + idx_for_dir(&dir),
+            true,
+        );
         pos.apply_dir(&dir);
         // edge case: multiple blockers near the guard -> loop
         loop {
@@ -140,16 +166,20 @@ fn test_for_cycle(spawn_pos: &Coord, matrix: &Vec<Vec<char>>) -> bool {
             if pos
                 .next_pos_towards(&dir)
                 .get_from(&matrix)
-                .is_some_and(|&it| it == '#')
+                .is_some_and(|&it| it == Cell::Blocker)
             {
-                dir = next_dir(&dir);
+                dir = dir.next_dir();
             } else {
                 break;
             }
         }
         // if we're on a visited node and going the same way,
         // we're in a loop
-        if visited.contains(&(dir, pos)) {
+        if pos.in_bounds(matrix.len())
+            && *visited
+                .get(pos.y * matrix.len() * 4 + pos.x * 4 + idx_for_dir(&dir))
+                .unwrap()
+        {
             return true;
         }
     }
@@ -158,50 +188,39 @@ fn test_for_cycle(spawn_pos: &Coord, matrix: &Vec<Vec<char>>) -> bool {
     false
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[repr(u8)]
+enum Cell {
+    Blocker,
+    Empty,
+    Start,
+}
+
+type Matrix = ArrayVec<ArrayVec<Cell, 130>, 130>;
+
 pub fn part2(input: String) -> String {
-    let mut matrix = input
-        .lines()
-        // TODO: smarter container, lines are small and access is very random
-        .map(|it| it.chars().collect::<Vec<char>>())
-        .collect::<Vec<Vec<char>>>();
-
-    // assert square
-    assert!(matrix.iter().all(|it| it.len() == matrix.len()));
-
-    let mut pos = Coord::new(0, 0);
-    // find the guard's starting position
-    'outer: for y in 0..matrix.len() {
-        for x in 0..matrix.len() {
-            if matrix[y][x] == '^' {
-                pos.set(y, x);
-                break 'outer;
-            }
-        }
-    }
-    let original_pos = pos.clone();
+    let (pos, mut matrix) = input_into_matrix(input);
 
     // start with getting p1 answer as it's only useful
     // to place blockers on the path that the guard goes through
-    let visited = walk(pos, &matrix);
-
-    // println!()
+    let visited = walk(&pos, &matrix);
 
     let mut count = 0u32;
     for coord in visited.iter() {
-        if *coord == original_pos {
+        // we can't block the spawn point, skip it
+        if matrix[coord.y][coord.x] == Cell::Start {
             continue;
         }
-        if matrix[coord.y][coord.x] == '#' || matrix[coord.y][coord.x] == '^' {
-            panic!("ASASDASDASASD")
-        }
-        matrix[coord.y][coord.x] = '#';
+        // place blocker
+        matrix[coord.y][coord.x] = Cell::Blocker;
 
-        if test_for_cycle(&original_pos, &matrix) {
+        // test-simulate if we get a loop, and count it if we do
+        if test_for_cycle(&pos, &matrix) {
             count += 1;
         }
-        matrix[coord.y][coord.x] = '.';
+        // remove blocker
+        matrix[coord.y][coord.x] = Cell::Empty;
     }
-
     count.to_string()
 }
 
