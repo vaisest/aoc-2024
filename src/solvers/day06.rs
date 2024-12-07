@@ -21,15 +21,6 @@ impl Direction {
     }
 }
 
-// fn next_dir(dir: &Direction) -> Direction {
-//     match dir {
-//         Direction::UP => Direction::RIGHT,
-//         Direction::RIGHT => Direction::DOWN,
-//         Direction::DOWN => Direction::LEFT,
-//         Direction::LEFT => Direction::UP,
-//     }
-// }
-
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 struct Coord {
     y: usize,
