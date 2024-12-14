@@ -8,6 +8,9 @@ arrayvec = "0.7.6"
 bitvec = "1.0.1"
 itertools = "0.13.0"
 regex = "1.11.1"
+# the stock rust hashmap is designed to be resistant to 
+# ddos attacks. this one used by rustc is designed to be fast
+rustc-hash = "2.1.0"
 
 [profile.profiling]
 inherits = "release"

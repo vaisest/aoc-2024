@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 pub fn part1(input: String) -> String {
     let mut left: Vec<u32> = vec![];
@@ -31,7 +31,7 @@ pub fn part1(input: String) -> String {
 
 pub fn part2(input: String) -> String {
     let mut left: Vec<u32> = vec![];
-    let mut right = HashMap::<u32, u32>::new();
+    let mut right = FxHashMap::<u32, u32>::default();
 
     for line in input.lines().filter(|x| !x.is_empty()) {
         let (l, r) = line
