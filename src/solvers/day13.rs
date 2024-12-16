@@ -1,5 +1,7 @@
 use regex::Regex;
 
+use super::util::float_basically_integer;
+
 fn gaussian_elimination(mut matrix: [[f64; 3]; 2]) -> (f64, f64) {
     // our matrix is
     // ax bx | x
@@ -30,17 +32,6 @@ fn gaussian_elimination(mut matrix: [[f64; 3]; 2]) -> (f64, f64) {
     // now we have to scale both rows so that positions ax and by are equal to 1,
     // which gets us our answer in x and y
     (matrix[0][2] / matrix[0][0], matrix[1][2] / matrix[1][1])
-}
-
-fn close_enough(n: f64, threshold_exp: i32) -> Option<u64> {
-    // essentially python math.isclose() which checks if this is basically an integer
-    // there is a very tiny bit of inaccuracy from gaussian_elimination as it has to use floats.
-    let rounded = n.round();
-    if (rounded - n).abs() < 10.0f64.powi(threshold_exp) {
-        Some(rounded as u64)
-    } else {
-        None
-    }
 }
 
 fn solve(input: String, constant: f64, threshold_exp: i32) -> u64 {
@@ -80,8 +71,8 @@ fn solve(input: String, constant: f64, threshold_exp: i32) -> u64 {
             // I wish I had an if-let chain :(
 
             // threshold has to be adjustable as p2 numbers are too inaccurate,
-            close_enough(pair.0, threshold_exp).and_then(|lhs| {
-                close_enough(pair.1, threshold_exp).and_then(|rhs| Some(lhs * 3 + rhs))
+            float_basically_integer(pair.0, threshold_exp).and_then(|lhs| {
+                float_basically_integer(pair.1, threshold_exp).and_then(|rhs| Some(lhs * 3 + rhs))
             })
         })
         .sum::<u64>()
