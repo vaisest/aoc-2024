@@ -17,7 +17,6 @@ pub fn adjacent_in_bounds(
 
 pub fn float_basically_integer(n: f64, threshold_exp: i32) -> Option<u64> {
     // essentially python math.isclose() which checks if this is basically an integer
-    // there is a very tiny bit of inaccuracy from gaussian_elimination as it has to use floats.
     let rounded = n.round();
     if (rounded - n).abs() < 10.0f64.powi(threshold_exp) {
         Some(rounded as u64)
