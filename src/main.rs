@@ -53,4 +53,7 @@ fn main() {
 
     println!("Day 15 part 1: {}", solvers::day15::part1(read_input("15")));
     println!("Day 15 part 2: {}", solvers::day15::part2(read_input("15")));
+
+    println!("Day 16 part 1: {}", solvers::day16::part1(read_input("16")));
+    println!("Day 16 part 2: {}", solvers::day16::part2(read_input("16")));
 }

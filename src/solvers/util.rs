@@ -24,3 +24,21 @@ pub fn float_basically_integer(n: f64, threshold_exp: i32) -> Option<u64> {
         None
     }
 }
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+impl Direction {
+    pub fn apply_unchecked(&self, (y, x): (usize, usize)) -> (usize, usize) {
+        // no bounds checking required as the area is padded
+        match self {
+            Direction::Up => (y - 1, x),
+            Direction::Down => (y + 1, x),
+            Direction::Left => (y, x - 1),
+            Direction::Right => (y, x + 1),
+        }
+    }
+}

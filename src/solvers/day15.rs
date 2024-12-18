@@ -1,3 +1,5 @@
+use super::util::Direction;
+
 #[derive(Clone, Copy)]
 enum AreaElement {
     Wall,
@@ -5,23 +7,7 @@ enum AreaElement {
     Box2,
     Empty,
 }
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-impl Direction {
-    fn apply(&self, (y, x): (usize, usize)) -> (usize, usize) {
-        // no bounds checking required as the area is padded
-        match self {
-            Direction::Up => (y - 1, x),
-            Direction::Down => (y + 1, x),
-            Direction::Left => (y, x - 1),
-            Direction::Right => (y, x + 1),
-        }
-    }
-}
+
 fn try_move_box(
     matrix: &mut Vec<Vec<AreaElement>>,
     coord: (usize, usize),
@@ -30,7 +16,7 @@ fn try_move_box(
     // return true -> bot moves
     // return false -> bot doesn't move (hits wall)
 ) -> bool {
-    let front = direction.apply(coord);
+    let front = direction.apply_unchecked(coord);
     match matrix[front.0][front.1] {
         AreaElement::Wall => {
             return false;
@@ -92,7 +78,7 @@ pub fn part1(input: String) -> String {
 
     for command in commands.into_iter() {
         if try_move_box(&mut area, robot_coord, &command, false) {
-            robot_coord = command.apply(robot_coord);
+            robot_coord = command.apply_unchecked(robot_coord);
         }
     }
 
@@ -136,7 +122,7 @@ fn move_p2(
         AreaElement::Empty => true,
         AreaElement::Wall => false,
         AreaElement::Box => {
-            let front = direction.apply(coord);
+            let front = direction.apply_unchecked(coord);
             let res = move_p2(area, direction, front, check_only)
                 && move_p2(area, direction, (front.0, front.1 + 1), check_only);
             if res && !check_only {
@@ -149,7 +135,7 @@ fn move_p2(
             res
         }
         AreaElement::Box2 => {
-            let front = direction.apply(coord);
+            let front = direction.apply_unchecked(coord);
             let res = move_p2(area, direction, front, check_only)
                 && move_p2(area, direction, (front.0, front.1 - 1), check_only);
             if res && !check_only {
@@ -169,7 +155,7 @@ fn move_lr(area: &mut Vec<Vec<AreaElement>>, direction: &Direction, coord: (usiz
         AreaElement::Empty => true,
         AreaElement::Wall => false,
         AreaElement::Box => {
-            let next = direction.apply(coord);
+            let next = direction.apply_unchecked(coord);
             if move_lr(area, direction, next) {
                 area[coord.0][coord.1] = AreaElement::Empty;
                 area[next.0][next.1] = AreaElement::Box;
@@ -178,7 +164,7 @@ fn move_lr(area: &mut Vec<Vec<AreaElement>>, direction: &Direction, coord: (usiz
             false
         }
         AreaElement::Box2 => {
-            let next = direction.apply(coord);
+            let next = direction.apply_unchecked(coord);
             if move_lr(area, direction, next) {
                 area[coord.0][coord.1] = AreaElement::Empty;
                 area[next.0][next.1] = AreaElement::Box2;
@@ -224,7 +210,7 @@ pub fn part2(input: String) -> String {
     });
 
     for direction in commands {
-        let next_spot = direction.apply(robot_coord);
+        let next_spot = direction.apply_unchecked(robot_coord);
         let moved = match direction {
             Direction::Down | Direction::Up => {
                 if move_p2(&mut area, &direction, next_spot, true) {
