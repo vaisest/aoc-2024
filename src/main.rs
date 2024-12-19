@@ -1,5 +1,4 @@
 use std::fs;
-
 mod solvers;
 
 fn read_input(day: &str) -> String {
@@ -9,6 +8,7 @@ fn read_input(day: &str) -> String {
 }
 
 fn main() {
+    // i wish i knew how to put these in a for loop
     println!("Day 1 part 1: {}", solvers::day01::part1(read_input("01")));
     println!("Day 1 part 2: {}", solvers::day01::part2(read_input("01")));
 
@@ -56,4 +56,10 @@ fn main() {
 
     println!("Day 16 part 1: {}", solvers::day16::part1(read_input("16")));
     println!("Day 16 part 2: {}", solvers::day16::part2(read_input("16")));
+
+    println!("Day 17 part 1: {}", solvers::day17::part1(read_input("17")));
+    println!("Day 17 part 2: {}", solvers::day17::part2(read_input("17")));
+
+    println!("Day 18 part 1: {}", solvers::day18::part1(read_input("18")));
+    println!("Day 18 part 2: {}", solvers::day18::part2(read_input("18")));
 }
