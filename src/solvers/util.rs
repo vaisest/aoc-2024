@@ -15,6 +15,10 @@ pub fn adjacent_in_bounds(
     });
 }
 
+pub fn get_2d<T>(matrix: &Vec<Vec<T>>, (y, x): (usize, usize)) -> Option<&T> {
+    matrix.get(y).and_then(|row| row.get(x))
+}
+
 pub fn float_basically_integer(n: f64, threshold_exp: i32) -> Option<u64> {
     // essentially python math.isclose() which checks if this is basically an integer
     let rounded = n.round();

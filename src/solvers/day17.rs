@@ -74,10 +74,7 @@ fn execute_cycle(
         _ => unreachable!(),
     }
 }
-struct Action {
-    instr: u64,
-    operand: u64,
-}
+
 fn parse_input(input: String) -> ([u64; 3], Vec<u64>) {
     let (register_string, opcode_string) = input.split_once("\n\n").unwrap();
 
