@@ -115,10 +115,8 @@ pub fn part2(input: String) -> String {
         // we can save time by only checking for path completeness when the new
         // byte was surrounded by two blocks, which means that it blocked a way
         // through. though even with this optimisation, this is rather slow
-        if blocks_any_path(&area, byte.0, byte.1) {
-            if !has_path(&area, (0, 0), (70, 70)) {
-                return format!("{},{}", byte.0, byte.1);
-            }
+        if blocks_any_path(&area, byte.0, byte.1) && !has_path(&area, (0, 0), (70, 70)) {
+            return format!("{},{}", byte.0, byte.1);
         }
     }
     "-1".to_string()
