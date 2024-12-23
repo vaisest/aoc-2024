@@ -1,6 +1,4 @@
-// fn mix(lhs: u64, rhs: u64) -> u64 {}
-
-use rustc_hash::{FxHashMap, FxHashSet};
+use bitvec::bitvec;
 
 fn process(mut monkey: u64) -> u64 {
     monkey = ((64 * monkey) ^ monkey) % 16777216;
@@ -39,13 +37,14 @@ pub fn part2(input: String) -> String {
     let monkeys = input.lines().map(|line| line.parse::<u64>().unwrap());
 
     // map from 4 deltas to the total amount of bananas it buys
-    // let mut map: FxHashMap<_, u64> = FxHashMap::default();
-    // somehow this massive array is faster than the hashmap
+    // we use vectors with indexes based on the delta sequenes, as while
+    // there are a lot of possible combinations, the total amount
+    // is still relatively low and clearly outperforms fxhashmap
     let mut map = vec![0; 19usize.pow(4)];
     for mut monkey in monkeys {
         // we want to avoid checking delta sequences multiple times as the
         // monkey buys the first one that matches
-        let mut seen = FxHashSet::default();
+        let mut seen = bitvec![0; 19usize.pow(4)];
         let mut old_price = (monkey % 10) as i8;
         let mut deltas = vec![];
 
@@ -53,7 +52,7 @@ pub fn part2(input: String) -> String {
             monkey = process(monkey);
             let price = (monkey % 10) as i8;
 
-            let delta = (price as i64 - old_price as i64) as i8;
+            let delta = price - old_price;
             deltas.push(delta);
 
             old_price = price;
@@ -64,14 +63,14 @@ pub fn part2(input: String) -> String {
             }
             let deltas = (deltas[n - 4], deltas[n - 3], deltas[n - 2], deltas[n - 1]);
 
-            if seen.contains(&deltas) {
+            let idx = index(deltas);
+            if seen[idx] {
                 continue;
             }
-            seen.insert(deltas);
+            seen.set(idx, true);
             map[index(deltas)] += price;
         }
     }
-    // let best = *map.values().max().unwrap();
     let best = map.into_iter().max().unwrap();
 
     println!("elapsed millis: {}", start.elapsed().as_millis());
