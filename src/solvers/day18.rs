@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, collections::BinaryHeap};
+use std::collections::VecDeque;
 
 use super::util::{adjacent_in_bounds, get_2d};
 
@@ -13,33 +13,26 @@ fn find_shortest_path(
     source: (usize, usize),
     target: (usize, usize),
 ) -> Option<u64> {
-    // dijkstra's algorithm
-    let mut costs = vec![vec![u64::MAX; area.len()]; area.len()];
-    let mut heap = BinaryHeap::new();
+    // simple bfs
+    let mut heap = VecDeque::new();
+    let mut seen = vec![false; area.len() * area.len()];
+    seen[source.0 * area.len() + source.1] = true;
 
-    // 1, because the first index counts as a step
-    costs[source.0][source.1] = 1;
-    // Reverse helper struct to get us a min-heap instead of a max-heap
-    heap.push(Reverse((1, source)));
+    heap.push_back((0, source));
 
-    while let Some(Reverse((current_cost, current_pos))) = heap.pop() {
-        // at each position we might want to turn to a shorter path instead of
-        // going forward
+    while let Some((current_cost, current_pos)) = heap.pop_front() {
+        if current_pos == target {
+            return Some(current_cost);
+        }
+
         for (y, x) in adjacent_in_bounds(current_pos.0, current_pos.1, area.len()) {
             // let's not walk into a wall
-            if area[y][x] == Tile::Wall {
+            if area[y][x] == Tile::Wall || seen[y * area.len() + x] {
                 continue;
             }
+            seen[y * area.len() + x] = true;
 
-            // avoid retrying paths where we don't get a more optimal length
-            if get_2d(&costs, (y, x)).is_some_and(|&it| it <= current_cost) {
-                continue;
-            } else if (y, x) == target {
-                return Some(current_cost);
-            }
-            costs[y][x] = current_cost;
-
-            heap.push(Reverse((current_cost + 1, (y, x))));
+            heap.push_back((current_cost + 1, (y, x)));
         }
     }
 
