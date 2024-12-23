@@ -18,10 +18,10 @@ fn sum_all_cheats(
 ) -> usize {
     // TODO: optimise this as it is rather wasteful
     let mut result = 0;
-    for y in 0..track.len() {
-        for x in 0..track.len() {
+    for y in 1..track.len() - 1 {
+        for x in 1..track.len() - 1 {
             // we can't start from inside a wall
-            if track[y][x] == Tile::Wall {
+            if distances[y][x] == u64::MAX {
                 continue;
             }
             result += cheat_advantages(
@@ -41,21 +41,37 @@ fn cheat_advantages(
     source: (usize, usize),
     distances: &Vec<Vec<u64>>,
     max_cheat_time: i64,
-    minimum_cheat_advantage: i64,
+    required_cheat_advantage: i64,
 ) -> usize {
+    // a lot of the cheats produced overlap for different source points, which
+    // means it might be possible to cache them
     let mut count = 0;
-    for (target_y, row) in distances.into_iter().enumerate() {
-        for (target_x, target_distance) in row.into_iter().enumerate() {
-            let cheat_time = (target_y.abs_diff(source.0) + target_x.abs_diff(source.1)) as i64;
-            let cheat_advantage =
-                *target_distance as i64 - distances[source.0][source.1] as i64 - cheat_time;
+    let legal_range = 0..track.len() as i64;
 
-            // p1 and p2 limit our cheat time differently
-            if cheat_time >= 2 && cheat_time <= max_cheat_time
-                // and we can't end up inside a wall
-                && track[target_y][target_x] == Tile::Track
-                && cheat_advantage >= minimum_cheat_advantage
-            {
+    // we want to have a total of up to max_cheat_time spread between dy and dx
+    for dy in (-max_cheat_time)..=max_cheat_time {
+        let target_y = source.0 as i64 + dy;
+        let remainder = max_cheat_time - dy.abs();
+        for dx in (-remainder)..=remainder {
+            let target_x = source.1 as i64 + dx;
+
+            if !legal_range.contains(&target_y) || !legal_range.contains(&target_x) {
+                continue;
+            }
+            let target_y = target_y as usize;
+            let target_x = target_x as usize;
+
+            let target_distance = distances[target_y][target_x];
+            // if target is a wall, there's no point calculating anything else
+            if target_distance == u64::MAX {
+                continue;
+            }
+
+            let source_distance = distances[source.0][source.1];
+            let cheat_time = dy.abs() + dx.abs();
+            let cheat_advantage = target_distance as i64 - source_distance as i64 - cheat_time;
+
+            if cheat_advantage >= required_cheat_advantage {
                 count += 1;
             }
         }

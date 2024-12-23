@@ -1,4 +1,5 @@
 use crate::solvers::*;
+use clap::Parser;
 use std::{fs, hint::black_box, time::Instant};
 
 mod solvers;
@@ -48,16 +49,33 @@ fn run_bench(day: usize, part: usize, f: SolverType, input: &String) {
     while timer.elapsed().as_millis() < MIN_TIME_MILLIS {
         black_box(f(black_box(input.clone())));
         run_count += 1;
+        if run_count > 1000 {
+            break;
+        }
     }
     let total_time = timer.elapsed().as_millis();
     let per_run_millis = total_time as f64 / run_count as f64;
     println!("Day {day:2} part {part} benchmark: {run_count:6} runs in {total_time:3} ms at {per_run_millis:3.2} ms per run");
 }
+
+#[derive(Parser, Debug)]
+struct Args {
+    // Which specific day to run
+    #[arg(short, long, default_value=None)]
+    day: Option<usize>,
+
+    // Run benchmarks instead of executing normally
+    #[arg(short, long, default_value_t = false)]
+    benchmark: bool,
+}
 fn main() {
-    let bench = true;
-    for day in 1..=23 {
+    let args = Args::parse();
+
+    let from = args.day.unwrap_or(1);
+    let to = args.day.unwrap_or(23);
+    for day in from..=to {
         let ((p1, p2), input) = get_function_and_data(day);
-        if bench {
+        if args.benchmark {
             run_bench(day, 1, p1, &input);
             run_bench(day, 2, p2, &input);
             println!();
