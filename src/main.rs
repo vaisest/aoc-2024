@@ -1,80 +1,69 @@
-use std::fs;
-mod solvers;
+use crate::solvers::*;
+use std::{fs, hint::black_box, time::Instant};
 
+mod solvers;
 fn read_input(day: &str) -> String {
     let path = format!("input/day_{day}.txt");
     fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("could not read input file from {path} with error {e}"))
 }
 
+type SolverType = fn(String) -> String;
+fn get_function_and_data(day: usize) -> ((SolverType, SolverType), String) {
+    match day {
+        1 => ((day01::part1, day01::part2), read_input("01")),
+        2 => ((day02::part1, day02::part2), read_input("02")),
+        3 => ((day03::part1, day03::part2), read_input("03")),
+        4 => ((day04::part1, day04::part2), read_input("04")),
+        5 => ((day05::part1, day05::part2), read_input("05")),
+        6 => ((day06::part1, day06::part2), read_input("06")),
+        7 => ((day07::part1, day07::part2), read_input("07")),
+        8 => ((day08::part1, day08::part2), read_input("08")),
+        9 => ((day09::part1, day09::part2), read_input("09")),
+        10 => ((day10::part1, day10::part2), read_input("10")),
+        11 => ((day11::part1, day11::part2), read_input("11")),
+        12 => ((day12::part1, day12::part2), read_input("12")),
+        13 => ((day13::part1, day13::part2), read_input("13")),
+        14 => ((day14::part1, day14::part2), read_input("14")),
+        15 => ((day15::part1, day15::part2), read_input("15")),
+        16 => ((day16::part1, day16::part2), read_input("16")),
+        17 => ((day17::part1, day17::part2), read_input("17")),
+        18 => ((day18::part1, day18::part2), read_input("18")),
+        19 => ((day19::part1, day19::part2), read_input("19")),
+        20 => ((day20::part1, day20::part2), read_input("20")),
+        21 => ((day21::part1, day21::part2), read_input("21")),
+        22 => ((day22::part1, day22::part2), read_input("22")),
+        23 => ((day23::part1, day23::part2), read_input("23")),
+        // 24 => ((day24::part1, day24::part2), read_input("24")),
+        // 25 => ((day25::part1, day25::part2), read_input("25")),
+        _ => {
+            todo!();
+        }
+    }
+}
+fn run_bench(day: usize, part: usize, f: SolverType, input: &String) {
+    let timer = Instant::now();
+    let mut run_count = 0;
+    const MIN_TIME_MILLIS: u128 = 500;
+    while timer.elapsed().as_millis() < MIN_TIME_MILLIS {
+        black_box(f(black_box(input.clone())));
+        run_count += 1;
+    }
+    let total_time = timer.elapsed().as_millis();
+    let per_run_millis = total_time as f64 / run_count as f64;
+    println!("Day {day:2} part {part} benchmark: {run_count:6} runs in {total_time:3} ms at {per_run_millis:3.2} ms per run");
+}
 fn main() {
-    // i wish i knew how to put these in a for loop
-    println!("Day 1 part 1: {}", solvers::day01::part1(read_input("01")));
-    println!("Day 1 part 2: {}", solvers::day01::part2(read_input("01")));
-
-    println!("Day 2 part 1: {}", solvers::day02::part1(read_input("02")));
-    println!("Day 2 part 2: {}", solvers::day02::part2(read_input("02")));
-
-    println!("Day 3 part 1: {}", solvers::day03::part1(read_input("03")));
-    println!("Day 3 part 2: {}", solvers::day03::part2(read_input("03")));
-
-    println!("Day 4 part 1: {}", solvers::day04::part1(read_input("04")));
-    println!("Day 4 part 2: {}", solvers::day04::part2(read_input("04")));
-
-    println!("Day 5 part 1: {}", solvers::day05::part1(read_input("05")));
-    println!("Day 5 part 2: {}", solvers::day05::part2(read_input("05")));
-
-    println!("Day 6 part 1: {}", solvers::day06::part1(read_input("06")));
-    println!("Day 6 part 2: {}", solvers::day06::part2(read_input("06")));
-
-    println!("Day 7 part 1: {}", solvers::day07::part1(read_input("07")));
-    println!("Day 7 part 2: {}", solvers::day07::part2(read_input("07")));
-
-    println!("Day 8 part 1: {}", solvers::day08::part1(read_input("08")));
-    println!("Day 8 part 2: {}", solvers::day08::part2(read_input("08")));
-
-    println!("Day 9 part 1: {}", solvers::day09::part1(read_input("09")));
-    println!("Day 9 part 2: {}", solvers::day09::part2(read_input("09")));
-
-    println!("Day 10 part 1: {}", solvers::day10::part1(read_input("10")));
-    println!("Day 10 part 2: {}", solvers::day10::part2(read_input("10")));
-
-    println!("Day 11 part 1: {}", solvers::day11::part1(read_input("11")));
-    println!("Day 11 part 2: {}", solvers::day11::part2(read_input("11")));
-
-    println!("Day 12 part 1: {}", solvers::day12::part1(read_input("12")));
-    println!("Day 12 part 2: {}", solvers::day12::part2(read_input("12")));
-
-    println!("Day 13 part 1: {}", solvers::day13::part1(read_input("13")));
-    println!("Day 13 part 2: {}", solvers::day13::part2(read_input("13")));
-
-    println!("Day 14 part 1: {}", solvers::day14::part1(read_input("14")));
-    println!("Day 14 part 2: {}", solvers::day14::part2(read_input("14")));
-
-    println!("Day 15 part 1: {}", solvers::day15::part1(read_input("15")));
-    println!("Day 15 part 2: {}", solvers::day15::part2(read_input("15")));
-
-    println!("Day 16 part 1: {}", solvers::day16::part1(read_input("16")));
-    println!("Day 16 part 2: {}", solvers::day16::part2(read_input("16")));
-
-    println!("Day 17 part 1: {}", solvers::day17::part1(read_input("17")));
-    println!("Day 17 part 2: {}", solvers::day17::part2(read_input("17")));
-
-    println!("Day 18 part 1: {}", solvers::day18::part1(read_input("18")));
-    println!("Day 18 part 2: {}", solvers::day18::part2(read_input("18")));
-
-    println!("Day 19 part 1: {}", solvers::day19::part1(read_input("19")));
-    println!("Day 19 part 2: {}", solvers::day19::part2(read_input("19")));
-
-    println!("Day 20 part 1: {}", solvers::day20::part1(read_input("20")));
-    println!("Day 20 part 2: {}", solvers::day20::part2(read_input("20")));
-
-    println!("Day 21 part 1: {}", solvers::day21::part1(read_input("21")));
-    println!("Day 21 part 2: {}", solvers::day21::part2(read_input("21")));
-
-    println!("Day 22 part 1: {}", solvers::day22::part1(read_input("22")));
-    println!("Day 22 part 2: {}", solvers::day22::part2(read_input("22")));
-
-    println!("Day 23 part 1: {}", solvers::day23::part1(read_input("23")));
-    println!("Day 23 part 2: {}", solvers::day23::part2(read_input("23")));
+    let bench = true;
+    for day in 1..=23 {
+        let ((p1, p2), input) = get_function_and_data(day);
+        if bench {
+            run_bench(day, 1, p1, &input);
+            run_bench(day, 2, p2, &input);
+            println!();
+        } else {
+            println!("Day {day:2} part 1: {}", p1(input.clone()));
+            println!("Day {day:2} part 2: {}", p2(input.clone()));
+        }
+    }
 }
