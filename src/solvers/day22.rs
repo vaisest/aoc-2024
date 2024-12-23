@@ -1,3 +1,5 @@
+use std::array;
+
 use bitvec::bitvec;
 
 fn process(mut monkey: u64) -> u64 {
@@ -11,17 +13,32 @@ fn process(mut monkey: u64) -> u64 {
 }
 
 pub fn part1(input: String) -> String {
-    let start = std::time::Instant::now();
-    let monkeys = input.lines().map(|line| line.parse::<u64>().unwrap());
+    let monkeys = input
+        .lines()
+        .map(|line| line.parse::<u64>().unwrap())
+        .collect::<Vec<_>>();
 
     let mut total = 0;
-    for mut monkey in monkeys {
+    const LANES: usize = 16;
+    for monkes in monkeys.chunks_exact(LANES) {
+        let mut monkes: [u64; LANES] = array::from_fn(|i| monkes[i]);
+        for _ in 0..2000 {
+            monkes = monkes
+                .map(|monkey| ((64 * monkey) ^ monkey) % 16777216)
+                .map(|monkey| (monkey ^ (monkey / 32)) % 16777216)
+                .map(|monkey| ((monkey * 2048) ^ monkey) % 16777216);
+        }
+        for monkey in monkes {
+            total += monkey;
+        }
+    }
+    for monkey in monkeys.chunks_exact(LANES).remainder() {
+        let mut monkey = *monkey;
         for _ in 0..2000 {
             monkey = process(monkey);
         }
         total += monkey;
     }
-    println!("elapsed millis: {}", start.elapsed().as_millis());
     total.to_string()
 }
 
@@ -33,7 +50,6 @@ fn index(deltas: (i8, i8, i8, i8)) -> usize {
 }
 
 pub fn part2(input: String) -> String {
-    let start = std::time::Instant::now();
     let monkeys = input.lines().map(|line| line.parse::<u64>().unwrap());
 
     // map from 4 deltas to the total amount of bananas it buys
@@ -68,13 +84,11 @@ pub fn part2(input: String) -> String {
                 continue;
             }
             seen.set(idx, true);
-            map[index(deltas)] += price;
+            map[index(deltas)] += price as i16;
         }
     }
-    let best = map.into_iter().max().unwrap();
 
-    println!("elapsed millis: {}", start.elapsed().as_millis());
-    best.to_string()
+    map.into_iter().max().unwrap().to_string()
 }
 
 #[cfg(test)]
