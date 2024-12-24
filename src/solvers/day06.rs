@@ -1,9 +1,7 @@
-use std::collections::BTreeSet;
-
 use arrayvec::ArrayVec;
-use bitvec::prelude::*;
+use rustc_hash::FxHashMap;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 enum Direction {
     UP,
     DOWN,
@@ -21,19 +19,12 @@ impl Direction {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 struct Coord {
     y: usize,
     x: usize,
 }
 impl Coord {
-    fn new(y: usize, x: usize) -> Self {
-        Coord { y, x }
-    }
-    fn set(&mut self, y: usize, x: usize) {
-        self.y = y;
-        self.x = x;
-    }
     fn in_bounds(&self, square_len: usize) -> bool {
         self.y < square_len && self.x < square_len
     }
@@ -73,7 +64,7 @@ impl Coord {
 fn input_into_matrix(input: String) -> (Coord, Matrix) {
     // returns input as a matrix using arrayvec(n=130), converted into Cell enum
     // and also reports the guard spawn point
-    let mut pos = Coord::new(0, 0);
+    let mut pos = Coord { y: 0, x: 0 };
 
     let matrix = input
         .lines()
@@ -87,7 +78,7 @@ fn input_into_matrix(input: String) -> (Coord, Matrix) {
                         '.' => Cell::Empty,
                         '^' => {
                             // we save the guard's starting position
-                            pos.set(y, x);
+                            pos = Coord { y, x };
                             Cell::Start
                         }
                         _ => unreachable!("unrecognised character in day 6 input"),
@@ -104,20 +95,24 @@ fn input_into_matrix(input: String) -> (Coord, Matrix) {
     (pos, matrix)
 }
 
-fn walk(spawn_pos: &Coord, matrix: &Matrix) -> BTreeSet<Coord> {
+fn walk(spawn_pos: &Coord, matrix: &Matrix) -> FxHashMap<Coord, Direction> {
     // finds guard's route by moving forward until we're in front of a wall and have to turn right
     let mut pos = spawn_pos.clone();
-    let mut visited = BTreeSet::new();
+    let mut visited = FxHashMap::default();
     let mut dir = Direction::UP;
     while pos.in_bounds(matrix.len()) {
-        visited.insert(pos);
-        if pos
-            .next_pos_towards(&dir)
-            .get_from(&matrix)
-            .is_some_and(|&it| it == Cell::Blocker)
-        {
-            dir = dir.next_dir();
+        loop {
+            if pos
+                .next_pos_towards(&dir)
+                .get_from(&matrix)
+                .is_some_and(|&it| it == Cell::Blocker)
+            {
+                dir = dir.next_dir();
+            } else {
+                break;
+            }
         }
+        visited.insert(pos, dir);
         pos.apply_dir(&dir);
     }
     visited
@@ -138,49 +133,44 @@ fn idx_for_dir(dir: &Direction) -> usize {
     }
 }
 
-fn test_for_cycle(spawn_pos: &Coord, matrix: &Matrix) -> bool {
-    let mut pos = spawn_pos.clone();
-    let mut dir = Direction::UP;
-    // use bitvec instead of a set. hard to read, but seems to be a 25-30x speed increase
-    let mut visited = bitvec![0; matrix.len() * matrix.len() * 4];
+fn test_for_cycle(
+    mut pos: Coord,
+    blocker_pos: Coord,
+    mut direction: Direction,
+    matrix: &Matrix,
+) -> bool {
+    // travel like in p1, but with the additional blocker, and we return true if
+    // we happen to walk in the same direction in the same spot as before
+
+    // 3D. y, x, and direction
+    let mut visited = vec![false; matrix.len() * matrix.len() * 4];
 
     while pos.in_bounds(matrix.len()) {
-        visited.set(
-            pos.y * matrix.len() * 4 + pos.x * 4 + idx_for_dir(&dir),
-            true,
-        );
-        pos.apply_dir(&dir);
-        // edge case: multiple blockers near the guard -> loop
+        if visited[pos.y * matrix.len() * 4 + pos.x * 4 + idx_for_dir(&direction)] {
+            return true;
+        }
+        visited[pos.y * matrix.len() * 4 + pos.x * 4 + idx_for_dir(&direction)] = true;
+        // edge case: multiple blockers near the guard -> turn multiple times
         loop {
-            // move either forward or to the new direction
-            // if there's a wall ahead of us, we should turn right
-            if pos
-                .next_pos_towards(&dir)
+            let front = pos.next_pos_towards(&direction);
+            if front
                 .get_from(&matrix)
                 .is_some_and(|&it| it == Cell::Blocker)
+                || front == blocker_pos
             {
-                dir = dir.next_dir();
+                direction = direction.next_dir();
             } else {
                 break;
             }
         }
-        // if we're on a visited node and going the same way,
-        // we're in a loop
-        if pos.in_bounds(matrix.len())
-            && *visited
-                .get(pos.y * matrix.len() * 4 + pos.x * 4 + idx_for_dir(&dir))
-                .unwrap()
-        {
-            return true;
-        }
+        pos.apply_dir(&direction);
     }
     // we went out of bounds without being in a loop
-    // -> succsefully traversed so no cycle
+    // -> successfully traversed so no cycle
     false
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-#[repr(u8)]
 enum Cell {
     Blocker,
     Empty,
@@ -190,29 +180,26 @@ enum Cell {
 type Matrix = ArrayVec<ArrayVec<Cell, 130>, 130>;
 
 pub fn part2(input: String) -> String {
-    let (pos, mut matrix) = input_into_matrix(input);
+    let (pos, matrix) = input_into_matrix(input);
 
     // start with getting p1 answer as it's only useful
     // to place blockers on the path that the guard goes through
     let visited = walk(&pos, &matrix);
-
-    let mut count = 0u32;
-    for coord in visited.iter() {
-        // we can't block the spawn point, skip it
-        if matrix[coord.y][coord.x] == Cell::Start {
-            continue;
-        }
-        // place blocker
-        matrix[coord.y][coord.x] = Cell::Blocker;
-
+    // avoid getting duplicates for blockers in overlapping paths
+    let mut seen = vec![false; 130 * 130];
+    for (spawn_point, spawn_dir) in visited.into_iter() {
         // test-simulate if we get a loop, and count it if we do
-        if test_for_cycle(&pos, &matrix) {
-            count += 1;
+        let blocker_spot = spawn_point.next_pos_towards(&spawn_dir);
+        if blocker_spot.in_bounds(matrix.len())
+            && blocker_spot
+                .get_from(&matrix)
+                .is_some_and(|&c| c != Cell::Blocker)
+            && test_for_cycle(spawn_point, blocker_spot, spawn_dir, &matrix)
+        {
+            seen[blocker_spot.y * 130 + blocker_spot.x] = true;
         }
-        // remove blocker
-        matrix[coord.y][coord.x] = Cell::Empty;
     }
-    count.to_string()
+    seen.into_iter().filter(|&v| v).count().to_string()
 }
 
 #[cfg(test)]

@@ -45,7 +45,7 @@ fn get_function_and_data(day: usize) -> ((SolverType, SolverType), String) {
 fn run_bench(day: usize, part: usize, f: SolverType, input: &String) {
     let timer = Instant::now();
     let mut run_count = 0;
-    const MIN_TIME_MILLIS: u128 = 500;
+    const MIN_TIME_MILLIS: u128 = 750;
     while timer.elapsed().as_millis() < MIN_TIME_MILLIS {
         black_box(f(black_box(input.clone())));
         run_count += 1;
