@@ -1,12 +1,7 @@
 use regex::Regex;
 use rustc_hash::FxHashMap;
 
-struct Wire<'a> {
-    // array?
-    name: &'a str,
-    value: bool,
-}
-fn do_op(lhs: u8, rhs: u8, op: &str) -> u8 {
+fn execute_op(lhs: u8, rhs: u8, op: &str) -> u8 {
     match op {
         "AND" => lhs & rhs,
         "OR" => lhs | rhs,
@@ -14,17 +9,10 @@ fn do_op(lhs: u8, rhs: u8, op: &str) -> u8 {
         _ => unreachable!(),
     }
 }
-pub fn part1(input: String) -> String {
-    println!("a");
+fn parse_input(input: &str) -> (&str, Vec<[&str; 4]>) {
     let (wire_values, gate_connections) = input.split_once("\n\n").unwrap();
     let gate_re = Regex::new(r"(.{3}) (AND|OR|XOR) (.{3}) -> (.{3})").unwrap();
-    let mut wire_map = FxHashMap::default();
-    wire_values.lines().for_each(|line| {
-        let (name, value) = line.split_once(": ").unwrap();
-
-        wire_map.insert(name, value.parse::<u8>().unwrap());
-    });
-    let mut gate_connections = gate_connections
+    let gate_connections = gate_connections
         .lines()
         .map(|line| {
             let caps = gate_re.captures(line).unwrap();
@@ -32,18 +20,24 @@ pub fn part1(input: String) -> String {
             s
         })
         .collect::<Vec<_>>();
+    (wire_values, gate_connections)
+}
+pub fn part1(input: String) -> String {
+    let (wire_values, mut gate_connections) = parse_input(&input);
+    let mut wire_map = FxHashMap::default();
+    wire_values.lines().for_each(|line| {
+        let (name, value) = line.split_once(": ").unwrap();
+        wire_map.insert(name, value.parse::<u8>().unwrap());
+    });
 
-    loop {
-        if gate_connections.len() == 0 {
-            break;
-        }
-        // println!("{gate_connections:?}, {wire_map:?}");
+    // loop while removing connections until they have all been applied
+    while !gate_connections.is_empty() {
         gate_connections.retain(|&[lhs, op, rhs, ret]| {
             let lhs_val = wire_map.get(lhs);
             let rhs_val = wire_map.get(rhs);
             match (lhs_val, rhs_val) {
                 (Some(&a), Some(&b)) => {
-                    wire_map.insert(ret, do_op(a, b, op));
+                    wire_map.insert(ret, execute_op(a, b, op));
                     false
                 }
                 _ => true,
@@ -65,7 +59,76 @@ pub fn part1(input: String) -> String {
 }
 
 pub fn part2(input: String) -> String {
-    "-1".to_string()
+    let (_, gate_connections) = parse_input(&input);
+    let mut wire_map: FxHashMap<&str, Vec<(&str, &str)>> = FxHashMap::default();
+
+    // we need a map to know what operations follow another operation
+    for &[lhs, op, rhs, ret] in gate_connections.iter() {
+        wire_map.entry(lhs).or_insert(vec![]).push((op, ret));
+        wire_map.entry(rhs).or_insert(vec![]).push((op, ret));
+    }
+
+    let mut wrong_outputs = vec![];
+    for &[lhs, op, rhs, ret] in gate_connections.iter() {
+        // basically we ensure the adder looks like this:
+        // https://en.wikipedia.org/wiki/Adder_(electronics)#/media/File:Fulladder.gif
+        let chained_ops = wire_map.get(&ret);
+        let chained_ops_contain =
+            |op| chained_ops.is_some_and(|v| v.iter().find(|a| a.0 == op).is_some());
+
+        let has_chained_xor = chained_ops_contain("XOR");
+        let has_chained_and = chained_ops_contain("AND");
+        let has_chained_or = chained_ops_contain("OR");
+        let takes_first_input = lhs.ends_with("00") && rhs.ends_with("00");
+        let takes_input_bit = (lhs.starts_with('x') && rhs.starts_with('y'))
+            || (rhs.starts_with('x') && lhs.starts_with('y'));
+        let outputs_bit = ret.starts_with('z');
+        let outputs_last_bit = ret == "z45";
+
+        let valid = match op {
+            "XOR" => {
+                // XOR only outputs a bit if it doesn't take an input bit
+                if !takes_input_bit && outputs_bit {
+                    true
+                // XOR only takes an input bit if a XOR follows it
+                } else if takes_input_bit && has_chained_xor {
+                    true
+                // unless the input bits are the first bits (no carryover bit exists)
+                } else if takes_first_input && outputs_bit {
+                    true
+                } else {
+                    false
+                }
+            }
+            "OR" => {
+                // OR either outputs into z45 or an AND and XOR (carryover bit)
+                if outputs_last_bit || (has_chained_and && has_chained_xor) {
+                    true
+                } else {
+                    false
+                }
+            }
+            "AND" => {
+                // ANDs only lead into ORs
+                if has_chained_or {
+                    true
+                // unless the input bits are the first bits (no carryover bit exists)
+                } else if takes_first_input {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => {
+                unreachable!()
+            }
+        };
+        if !valid {
+            wrong_outputs.push(ret);
+        }
+    }
+
+    wrong_outputs.join(",").to_string()
 }
 
 #[cfg(test)]
@@ -140,9 +203,31 @@ tnw OR pbm -> gnj"
 
     #[test]
     fn sample_p2() {
-        use super::part2;
+        // use super::part2;
 
-        let input = "".to_string();
-        assert_eq!(part2(input), "31");
+        // test input does not apply to this approach as the test input doesn't
+        // implement an adder
+
+        //         let input = "x00: 0
+        // x01: 1
+        // x02: 0
+        // x03: 1
+        // x04: 0
+        // x05: 1
+        // y00: 0
+        // y01: 0
+        // y02: 1
+        // y03: 1
+        // y04: 0
+        // y05: 1
+
+        // x00 AND y00 -> z05
+        // x01 AND y01 -> z02
+        // x02 AND y02 -> z01
+        // x03 AND y03 -> z03
+        // x04 AND y04 -> z04
+        // x05 AND y05 -> z00"
+        //             .to_string();
+        //         assert_eq!(part2(input), "z00,z01,z02,z05");
     }
 }
