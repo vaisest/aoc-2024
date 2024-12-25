@@ -18,12 +18,13 @@ fn check(desired_result: u64, op_slice: &[u64], try_concatenation: bool) -> bool
     match op_slice {
         [operand] => *operand == desired_result,
         [head @ .., operand] => {
+            let greater = desired_result > *operand;
             // if the end result is divisible, last might be a part of a multiplier operation
             (desired_result % operand == 0 && check(desired_result / operand, head, try_concatenation))
             // and concatenation is only possible if the last digits are equal to it
-            || (try_concatenation && is_suffix(desired_result, *operand) && check(desired_result / 10u64.pow(operand.ilog10()+1), head, try_concatenation))
+            || (try_concatenation && greater && is_suffix(desired_result, *operand) && check(desired_result / 10u64.pow(operand.ilog10()+1), head, try_concatenation))
             // addition is almost always possible so we leave it for the last
-            || (desired_result > *operand && check(desired_result - operand, head, try_concatenation))
+            || (greater && check(desired_result - operand, head, try_concatenation))
         }
         _ => unreachable!(),
     }
