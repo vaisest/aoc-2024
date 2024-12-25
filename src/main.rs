@@ -36,7 +36,7 @@ fn get_function_and_data(day: usize) -> ((SolverType, SolverType), String) {
         22 => ((day22::part1, day22::part2), read_input("22")),
         23 => ((day23::part1, day23::part2), read_input("23")),
         24 => ((day24::part1, day24::part2), read_input("24")),
-        // 25 => ((day25::part1, day25::part2), read_input("25")),
+        25 => ((day25::part1, day25::part2), read_input("25")),
         _ => {
             todo!();
         }
@@ -72,7 +72,7 @@ fn main() {
     let args = Args::parse();
 
     let from = args.day.unwrap_or(1);
-    let to = args.day.unwrap_or(24);
+    let to = args.day.unwrap_or(25);
     for day in from..=to {
         let ((p1, p2), input) = get_function_and_data(day);
         if args.benchmark {
