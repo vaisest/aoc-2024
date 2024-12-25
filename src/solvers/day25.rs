@@ -1,50 +1,30 @@
-fn get_height(lock: &Vec<Vec<char>>, is_key: bool) -> [usize; 5] {
-    let pins = lock[0].len();
-    let mut pin_heights = [None; 5];
-    if is_key {
-        for x in 0..pins {
-            for y in (0..lock.len()).rev() {
-                if pin_heights[x].is_none() && lock[y][x] != '#' {
-                    pin_heights[x].replace(lock.len() - y - 1);
-                }
-            }
-        }
-    } else {
-        for x in 0..pins {
-            for y in 0..lock.len() {
-                if pin_heights[x].is_none() && lock[y][x] != '#' {
-                    pin_heights[x].replace(y);
-                }
-            }
-        }
-    }
-    pin_heights.map(|e| e.unwrap())
-}
-fn fits((lock, lock_height): &([usize; 5], usize), key: &[usize; 5]) -> bool {
-    lock.into_iter()
-        .zip(key.into_iter())
-        .all(|(&lock_h, &key_h)| lock_h + key_h <= *lock_height)
-}
-
 pub fn part1(input: String) -> String {
     let mut locks = vec![];
     let mut keys = vec![];
     input.split("\n\n").for_each(|block| {
-        let v = block
+        let mut bits = 0u64;
+        block
             .lines()
-            .map(|line| line.chars().collect())
-            .collect::<Vec<Vec<_>>>();
-        if v[0][0] == '#' {
-            locks.push((get_height(&v, false), v.len()));
+            .map(|line| line.chars())
+            .flatten()
+            .enumerate()
+            .for_each(|(i, c)| match c {
+                // set i-th bit
+                '#' => bits |= 1 << i,
+                _ => {}
+            });
+        if bits & 1 == 1 {
+            locks.push(bits);
         } else {
-            keys.push(get_height(&v, true));
+            keys.push(bits);
         }
     });
 
     let mut total = 0;
     for lock in locks.iter() {
         for key in keys.iter() {
-            if fits(lock, key) {
+            // NAND -> if any overlaps, result is not zero
+            if lock & key == 0 {
                 total += 1;
             }
         }
@@ -111,6 +91,6 @@ mod tests {
         use super::part2;
 
         let input = "".to_string();
-        assert_eq!(part2(input), "31");
+        assert_eq!(part2(input), "There was no day 25 part 2");
     }
 }
