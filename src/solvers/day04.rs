@@ -1,25 +1,35 @@
 use arrayvec::ArrayVec;
 
-fn try_apply_direction(
+fn try_apply_direction<'a>(
     y: usize,
     x: usize,
     (dy, dx): (i16, i16),
-    arr: &ArrType,
+    arr: &Vec<&'a [u8]>,
     mul: i16,
-) -> Option<&char> {
+) -> Option<&'a u8> {
     let ny = (y as i16 + dy * mul) as usize;
     let nx = (x as i16 + dx * mul) as usize;
     arr.get(ny).and_then(|it| it.get(nx))
 }
 
-type ArrType = Vec<Vec<char>>;
+// fn char_lines(input: String) -> impl Iterator<Item = Vec<u8>> {
+fn char_lines(bytes: &Vec<u8>) -> impl Iterator<Item = &[u8]> {
+    bytes
+        .split(|c| {
+            if c.is_ascii() {
+                *c == b'\n'
+            } else {
+                panic!("input is not ascii. is it not a regular aoc input file?")
+            }
+        })
+        .filter(|line| line.len() != 0)
+}
 
 pub fn part1(input: String) -> String {
-    let mat = input
-        .lines()
-        // utf32, could be u8 ascii or the nightly-only char_ascii (https://github.com/rust-lang/rust/issues/110998)
-        .map(|line| line.chars().collect::<Vec<char>>())
-        .collect::<Vec<Vec<char>>>();
+    let u8s = input.into_bytes();
+    let mat = char_lines(&u8s)
+        // .map(|line| line.to_vec())
+        .collect::<Vec<_>>();
 
     // ensure input is square
     assert!(mat.iter().all(|line| line.len() == mat.len()));
@@ -38,8 +48,8 @@ pub fn part1(input: String) -> String {
             // we only check the start points of words
             // and know based on that character which one we're looking for
             let word = match mat[y][x] {
-                'X' => ['X', 'M', 'A', 'S'],
-                'S' => ['S', 'A', 'M', 'X'],
+                b'X' => [b'X', b'M', b'A', b'S'],
+                b'S' => [b'S', b'A', b'M', b'X'],
                 _ => continue,
             };
 
@@ -61,11 +71,10 @@ pub fn part1(input: String) -> String {
 
 // fn add_diag(coord: usize, diag: i16) -> usize
 pub fn part2(input: String) -> String {
-    let mat = input
-        .lines()
-        // utf32, todo: utf8/ascii?
-        .map(|line| line.chars().collect::<Vec<char>>())
-        .collect::<Vec<Vec<char>>>();
+    let u8s = input.into_bytes();
+    let mat = char_lines(&u8s)
+        // .map(|line| line.to_vec())
+        .collect::<Vec<_>>();
 
     // ensure input is square
     assert!(mat.iter().all(|line| line.len() == mat.len()));
@@ -75,7 +84,7 @@ pub fn part2(input: String) -> String {
         for x in 0..mat.len() {
             // we only want to check the middle of the X-MAS
             // as we're doing it by checking the diagonals
-            if mat[y][x] != 'A' {
+            if mat[y][x] != b'A' {
                 continue;
             }
 
@@ -93,7 +102,7 @@ pub fn part2(input: String) -> String {
                     mat.get((y as i16 + dy) as usize)
                         .and_then(|line| line.get((x as i16 + dx) as usize).copied())
                 })
-                .collect::<ArrayVec<char, 4>>();
+                .collect::<ArrayVec<u8, 4>>();
             // if some were out of bounds, there won't be enough and
             // it can't be an X-MAS
             if chars.len() < 4 {
@@ -106,8 +115,8 @@ pub fn part2(input: String) -> String {
             let bl = chars[2];
             let tr = chars[3];
             // check if we got MAS or SAM in both
-            if ((tl == 'M' && br == 'S') || (tl == 'S' && br == 'M'))
-                && ((bl == 'M' && tr == 'S') || (bl == 'S' && tr == 'M'))
+            if ((tl == b'M' && br == b'S') || (tl == b'S' && br == b'M'))
+                && ((bl == b'M' && tr == b'S') || (bl == b'S' && tr == b'M'))
             {
                 count += 1;
             }

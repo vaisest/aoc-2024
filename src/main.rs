@@ -49,7 +49,7 @@ fn run_bench(day: usize, part: usize, f: SolverType, input: &String) {
     while timer.elapsed().as_millis() < MIN_TIME_MILLIS {
         black_box(f(black_box(input.clone())));
         run_count += 1;
-        if run_count > 1000 {
+        if run_count > 3333 {
             break;
         }
     }
